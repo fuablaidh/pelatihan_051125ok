@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>To-Do List - Biru Putih</title>
+        <meta name="description" content="A simple blue & white themed to-do list with localStorage" />
+        <style>
+            :root{
+                --blue-900:#062a6a;
+                --blue-700: #0d47a1;
+                --blue-600: #1565c0;
+                --blue-300: #90caf9;
+                --blue-200: #bbdefb;
+                --white: #ffffff;
+                --muted:#6b7280;
+                --radius:12px;
+                --glass: rgba(255,255,255,0.8);
+            }
+            *{box-sizing:border-box}
+            body{
+                margin:0;
+                font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+                background: linear-gradient(180deg,var(--blue-200), #f8fbff);
+                color:#042028;
+                -webkit-font-smoothing:antialiased;
+                -moz-osx-font-smoothing:grayscale;
+                min-height:100vh;
+                display:flex;align-items:center;justify-content:center;padding:48px 16px;
+            }
+
+            .card{
+                width:100%;max-width:900px;background:linear-gradient(180deg,var(--glass),#fff);border-radius:var(--radius);box-shadow:0 18px 40px rgba(13,71,161,0.12);overflow:hidden;border:1px solid rgba(13,71,161,0.06);
+            }
+
+            header{
+                padding:28px 28px;background:linear-gradient(135deg,var(--blue-700),var(--blue-600));color:var(--white);position:relative;overflow:hidden;
+            }
+            header .brand{display:flex;align-items:center;gap:12px}
+            header h1{margin:0;font-size:20px;letter-spacing:0.2px}
+            header p{margin:6px 0 0;font-size:13px;opacity:0.95}
+
+            /* decorative wave */
+            header svg{position:absolute;right:-40px;bottom:-20px;opacity:0.12;transform:rotate(8deg)}
+
+            .content{padding:22px}
+            .add-row{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+            .input-wrap{position:relative;flex:1}
+            .input-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--blue-700);opacity:0.9}
+            .add-row input{width:100%;padding:12px 14px 12px 38px;border-radius:10px;border:1px solid #e8f1ff;font-size:15px;background:linear-gradient(180deg,#fff,#fbfdff);outline:none;transition:box-shadow .16s ease}
+            .add-row input:focus{box-shadow:0 6px 18px rgba(21,101,192,0.12)}
+
+            .btn{background:var(--blue-700);color:var(--white);border:none;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:transform .12s ease, box-shadow .12s ease}
+            .btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(13,71,161,0.12)}
+            .btn.ghost{background:transparent;color:var(--blue-600);border:1px solid var(--blue-200)}
+
+            .controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+            .filters{display:flex;gap:8px}
+            .filter-btn{background:transparent;border:1px solid transparent;padding:8px 10px;border-radius:10px;color:var(--muted);cursor:pointer}
+            .filter-btn.active{background:var(--blue-300);color:var(--blue-900);border-color:var(--blue-300)}
+
+            .stats{color:var(--muted);font-size:13px;display:flex;gap:10px;align-items:center}
+            .badge{background:var(--blue-300);color:var(--blue-900);padding:6px 8px;border-radius:999px;font-weight:600;font-size:13px}
+
+            ul.tasks{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
+            li.task{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid #f0f6ff;background:linear-gradient(180deg,#fff,#fbfdff);transition:transform .12s ease,box-shadow .12s ease,opacity .14s ease}
+            li.task:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(13,71,161,0.06)}
+            .task .title{flex:1;font-size:15px}
+            .task.completed .title{text-decoration:line-through;color:var(--muted);opacity:0.95}
+            .task .meta{font-size:12px;color:var(--muted);margin-left:8px}
+            .task .actions{display:flex;gap:8px}
+            .icon-btn{background:transparent;border:0;cursor:pointer;color:var(--muted);padding:6px;border-radius:8px}
+            .icon-btn.danger{color:#d32f2f}
+
+            /* custom checkbox look */
+            input[type="checkbox"]{width:18px;height:18px;accent-color:var(--blue-700);cursor:pointer}
+
+            .empty{padding:28px;border-radius:8px;background:#fbfdff;border:1px dashed #dbeefe;text-align:center;color:var(--muted);transition:transform .12s ease}
+
+            @media (max-width:640px){
+                .card{margin:0 8px}
+                header{padding:20px}
+                .content{padding:16px}
+                .add-row{flex-direction:column;align-items:stretch}
+                .add-row input{padding-left:12px}
+                .btn{width:100%}
+            }
+        </style>
+    </head>
+    <body>
+        <main class="card" role="main">
+            <header>
+                <div class="brand">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                        <rect width="24" height="24" rx="6" fill="rgba(255,255,255,0.12)" />
+                        <path d="M6 12h12" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M6 7h12" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
+                    </svg>
+                    <div>
+                        <h1>To-Do List</h1>
+                        <p>Fokus pada pembelajaran RPL — biru & putih yang menenangkan</p>
+                    </div>
+                </div>
+                <svg width="240" height="120" viewBox="0 0 240 120" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M0 80 C60 40 180 120 240 80 L240 140 L0 140 Z" fill="#fff"/>
+                </svg>
+            </header>
+
+            <section class="content">
+                <div class="add-row">
+                    <div class="input-wrap">
+                        <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14" stroke="#1565c0" stroke-width="2" stroke-linecap="round"/><path d="M5 12h14" stroke="#1565c0" stroke-width="2" stroke-linecap="round"/></svg>
+                        <input id="newTask" type="text" placeholder="Tambahkan tugas baru... (contoh: Belajar Git)" aria-label="Tambah tugas" />
+                    </div>
+                    <button id="addBtn" class="btn" title="Tambah tugas">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M5 12h14" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+                        Tambah
+                    </button>
+                </div>
+
+                <div class="controls">
+                    <div class="filters" role="tablist" aria-label="Filter tugas">
+                        <button class="filter-btn active" data-filter="all">Semua</button>
+                        <button class="filter-btn" data-filter="active">Aktif</button>
+                        <button class="filter-btn" data-filter="completed">Selesai</button>
+                    </div>
+                    <div style="display:flex;gap:12px;align-items:center">
+                        <div class="stats" id="stats"><span class="badge" id="countBadge">0</span> <span id="statsText">0 tugas • 0 sisa</span></div>
+                        <button id="clearCompleted" class="btn ghost" title="Hapus yang sudah selesai">Hapus Selesai</button>
+                    </div>
+                </div>
+
+                <ul class="tasks" id="taskList" aria-live="polite"></ul>
+                <div id="empty" class="empty" style="display:none;margin-top:12px">Belum ada tugas. Tambahkan tugas menggunakan kotak di atas.</div>
+            </section>
+        </main>
+
+        <script>
+            // Enhanced To-Do app with localStorage, edit-in-place, clear completed
+            const STORAGE_KEY = 'todoApp.tasks.v1';
+            const newTaskInput = document.getElementById('newTask');
+            const addBtn = document.getElementById('addBtn');
+            const taskListEl = document.getElementById('taskList');
+            const statsEl = document.getElementById('statsText');
+            const countBadge = document.getElementById('countBadge');
+            const emptyEl = document.getElementById('empty');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const clearCompletedBtn = document.getElementById('clearCompleted');
+
+            let tasks = [];
+            let filter = 'all';
+
+            function loadTasks(){
+                try{
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    tasks = raw ? JSON.parse(raw) : [];
+                }catch(e){ tasks = [] }
+            }
+
+            function saveTasks(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+
+            function renderTasks(){
+                taskListEl.innerHTML = '';
+                const filtered = tasks.filter(t => {
+                    if(filter === 'active') return !t.completed;
+                    if(filter === 'completed') return t.completed;
+                    return true;
+                });
+
+                if(filtered.length === 0){ emptyEl.style.display = 'block'; } else { emptyEl.style.display = 'none' }
+
+                for(const t of filtered){
+                    const li = document.createElement('li');
+                    li.className = 'task' + (t.completed ? ' completed' : '');
+                    li.dataset.id = t.id;
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = !!t.completed;
+                    checkbox.setAttribute('aria-label','Tandai selesai');
+                    checkbox.addEventListener('change', ()=> toggleComplete(t.id));
+
+                    const title = document.createElement('div');
+                    title.className = 'title';
+                    title.textContent = t.title;
+                    title.title = 'Double klik untuk edit';
+                    // edit-in-place on double click
+                    title.addEventListener('dblclick', ()=> enableEdit(title, t.id));
+
+                    const meta = document.createElement('div');
+                    meta.className = 'meta';
+                    const date = new Date(t.created);
+                    meta.textContent = date.toLocaleString();
+
+                    const actions = document.createElement('div');
+                    actions.className = 'actions';
+
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'icon-btn';
+                    editBtn.title = 'Edit';
+                    editBtn.innerHTML = 'Edit';
+                    editBtn.addEventListener('click', ()=> enableEdit(title,t.id));
+
+                    const del = document.createElement('button');
+                    del.className = 'icon-btn danger';
+                    del.title = 'Hapus tugas';
+                    del.innerHTML = 'Hapus';
+                    del.addEventListener('click', ()=> deleteTask(t.id));
+
+                    actions.appendChild(editBtn);
+                    actions.appendChild(del);
+
+                    li.appendChild(checkbox);
+                    li.appendChild(title);
+                    li.appendChild(meta);
+                    li.appendChild(actions);
+
+                    taskListEl.appendChild(li);
+                }
+
+                updateStats();
+            }
+
+            function updateStats(){
+                const total = tasks.length;
+                const remaining = tasks.filter(t=>!t.completed).length;
+                countBadge.textContent = total;
+                statsEl.textContent = `${total} tugas • ${remaining} sisa`;
+            }
+
+            function addTask(title){
+                const trimmed = (title||'').trim();
+                if(!trimmed) return;
+                const task = {id: Date.now().toString(), title: trimmed, completed:false, created: Date.now()};
+                tasks.unshift(task);
+                saveTasks();
+                renderTasks();
+            }
+
+            function toggleComplete(id){
+                const t = tasks.find(x=>x.id===id); if(!t) return; t.completed = !t.completed; saveTasks(); renderTasks();
+            }
+
+            function deleteTask(id){ tasks = tasks.filter(x=>x.id!==id); saveTasks(); renderTasks(); }
+
+            function clearCompleted(){ tasks = tasks.filter(x=>!x.completed); saveTasks(); renderTasks(); }
+
+            function enableEdit(titleEl, id){
+                const old = titleEl.textContent;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = old;
+                input.className = 'edit-input';
+                input.style.padding = '8px';
+                input.style.fontSize = '15px';
+                input.style.borderRadius = '8px';
+                input.style.border = '1px solid #e6eefb';
+                titleEl.replaceWith(input);
+                input.focus();
+                input.select();
+
+                function finish(){
+                    const val = input.value.trim();
+                    if(val) {
+                        const t = tasks.find(x=>x.id===id);
+                        if(t) t.title = val;
+                        saveTasks();
+                    }
+                    renderTasks();
+                }
+
+                input.addEventListener('blur', finish);
+                input.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') finish(); if(e.key==='Escape') renderTasks(); });
+            }
+
+            // UI events
+            addBtn.addEventListener('click', ()=>{ addTask(newTaskInput.value); newTaskInput.value=''; newTaskInput.focus(); });
+            newTaskInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') { addTask(newTaskInput.value); newTaskInput.value=''; } });
+
+            filterButtons.forEach(btn => { btn.addEventListener('click', ()=>{ filterButtons.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); filter = btn.dataset.filter; renderTasks(); }); });
+
+            clearCompletedBtn.addEventListener('click', ()=>{ clearCompleted(); });
+
+            // init
+            loadTasks();
+            renderTasks();
+        </script>
+    </body>
+</html>
